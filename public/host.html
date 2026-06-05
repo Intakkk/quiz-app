@@ -1,0 +1,682 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>🎯 Quiz — Hôte</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --surface: #1e293b;
+      --card: #334155;
+      --border: #475569;
+      --primary: #6366f1;
+      --primary-h: #818cf8;
+      --success: #22c55e;
+      --gold: #f59e0b;
+      --danger: #ef4444;
+      --warn: #fb923c;
+      --text: #f8fafc;
+      --muted: #94a3b8;
+      --r: 14px;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+    /* ── Screens ── */
+    .screen { display: none; min-height: 100vh; flex-direction: column; }
+    .screen.active { display: flex; }
+
+    /* ── Layout ── */
+    .page-header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 16px 28px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    .page-header h1 { font-size: 1.3rem; }
+    .page-body {
+      flex: 1;
+      padding: 28px;
+      max-width: 1100px;
+      margin: 0 auto;
+      width: 100%;
+    }
+    .page-footer {
+      background: var(--surface);
+      border-top: 1px solid var(--border);
+      padding: 16px 28px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+    }
+
+    /* ── Buttons ── */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 24px;
+      border: none;
+      border-radius: 10px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all .2s;
+      font-family: inherit;
+    }
+    .btn:disabled { opacity: .45; cursor: not-allowed; }
+    .btn-primary { background: var(--primary); color: #fff; }
+    .btn-primary:hover:not(:disabled) { background: var(--primary-h); transform: translateY(-1px); box-shadow: 0 6px 20px rgba(99,102,241,.35); }
+    .btn-success { background: var(--success); color: #052e0f; }
+    .btn-success:hover:not(:disabled) { opacity: .9; transform: translateY(-1px); }
+    .btn-danger { background: var(--danger); color: #fff; }
+    .btn-outline {
+      background: transparent;
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+    .btn-outline:hover { background: var(--card); }
+    .btn-lg { padding: 15px 32px; font-size: 1.05rem; }
+
+    /* ── Form ── */
+    .form-group { margin-bottom: 16px; }
+    label { display: block; font-size: .85rem; color: var(--muted); margin-bottom: 6px; font-weight: 500; }
+    .q-input {
+      width: 100%;
+      padding: 12px 16px;
+      background: var(--surface);
+      border: 1.5px solid var(--border);
+      border-radius: 10px;
+      color: var(--text);
+      font-size: .95rem;
+      font-family: inherit;
+      transition: border-color .2s;
+      resize: vertical;
+      min-height: 56px;
+    }
+    .q-input:focus { outline: none; border-color: var(--primary); }
+    .q-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+    @media (max-width: 700px) { .q-grid { grid-template-columns: 1fr; } }
+
+    /* ── Player list (lobby) ── */
+    .player-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 12px;
+      min-height: 36px;
+    }
+    .player-tag {
+      background: rgba(99,102,241,.15);
+      color: var(--primary-h);
+      border: 1px solid rgba(99,102,241,.3);
+      border-radius: 20px;
+      padding: 4px 14px;
+      font-size: .9rem;
+      font-weight: 500;
+    }
+
+    /* ── URL box ── */
+    .url-box {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 14px 18px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+    .url-text { font-size: 1rem; font-weight: 600; color: var(--success); word-break: break-all; }
+    .copy-btn {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 6px 14px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: .85rem;
+      white-space: nowrap;
+      transition: background .2s;
+    }
+    .copy-btn:hover { background: var(--border); }
+
+    /* ── Question active (answers live) ── */
+    .counter-bar {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--r);
+      padding: 20px;
+      margin-bottom: 20px;
+      text-align: center;
+    }
+    .counter-num { font-size: 3.5rem; font-weight: 800; color: var(--primary-h); }
+    .counter-label { color: var(--muted); font-size: .9rem; }
+    .answered-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 12px;
+    }
+    .answered-tag {
+      background: rgba(34,197,94,.15);
+      color: var(--success);
+      border: 1px solid rgba(34,197,94,.3);
+      border-radius: 20px;
+      padding: 4px 14px;
+      font-size: .88rem;
+    }
+    .q-display {
+      background: var(--surface);
+      border-left: 4px solid var(--primary);
+      border-radius: var(--r);
+      padding: 20px 24px;
+      font-size: 1.25rem;
+      font-weight: 600;
+      line-height: 1.5;
+      margin-bottom: 20px;
+    }
+
+    /* ── Grading ── */
+    .grading-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+      gap: 16px;
+    }
+    .acard {
+      background: var(--surface);
+      border: 2px solid var(--border);
+      border-radius: var(--r);
+      padding: 18px;
+      transition: border-color .2s;
+    }
+    .acard.reviewed { border-color: var(--success); }
+    .acard-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+    .acard-pseudo {
+      font-weight: 700;
+      font-size: 1rem;
+      color: var(--primary-h);
+    }
+    .pts-badge {
+      font-size: .9rem;
+      font-weight: 700;
+      padding: 3px 10px;
+      border-radius: 20px;
+      background: var(--card);
+      color: var(--muted);
+      transition: all .2s;
+    }
+    .pts-badge.active {
+      background: rgba(245,158,11,.2);
+      color: var(--gold);
+    }
+    .acard-answer {
+      background: var(--card);
+      border-radius: 8px;
+      padding: 12px;
+      font-size: .95rem;
+      line-height: 1.5;
+      min-height: 52px;
+      margin-bottom: 14px;
+      font-style: italic;
+    }
+    .acard-answer.no-ans { color: var(--danger); font-style: normal; }
+    .pt-controls { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+    .pt-btn {
+      width: 44px;
+      height: 44px;
+      border-radius: 8px;
+      border: 2px solid var(--border);
+      background: var(--card);
+      color: var(--text);
+      font-size: .95rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all .15s;
+    }
+    .pt-btn:hover { border-color: var(--primary); color: var(--primary-h); }
+    .pt-btn.sel { background: var(--primary); border-color: var(--primary); color: #fff; }
+    .pt-custom {
+      width: 70px;
+      padding: 8px 10px;
+      background: var(--card);
+      border: 2px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      font-size: .95rem;
+      text-align: center;
+      font-family: inherit;
+    }
+    .pt-custom:focus { outline: none; border-color: var(--primary); }
+    .total-score-hint { font-size: .78rem; color: var(--muted); margin-top: 6px; }
+
+    /* ── Leaderboard / Scores ── */
+    .lb { width: 100%; border-collapse: collapse; }
+    .lb th {
+      text-align: left;
+      color: var(--muted);
+      font-size: .8rem;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--border);
+    }
+    .lb td { padding: 14px 12px; border-bottom: 1px solid var(--border); }
+    .lb tr:last-child td { border-bottom: none; }
+    .lb .rank { text-align: center; font-weight: 800; color: var(--muted); }
+    .lb .score { text-align: right; font-weight: 700; color: var(--gold); font-size: 1.1rem; }
+    .lb tr.gold td { background: rgba(245,158,11,.08); }
+    .lb tr.silver td { background: rgba(148,163,184,.05); }
+    .lb tr.bronze td { background: rgba(234,88,12,.05); }
+
+    /* ── Misc ── */
+    .section-title {
+      font-size: 1.2rem;
+      font-weight: 700;
+      margin-bottom: 16px;
+    }
+    .info-box {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--r);
+      padding: 16px;
+      margin-bottom: 20px;
+    }
+    .badge {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-size: .8rem;
+      font-weight: 600;
+    }
+    .badge-primary { background: rgba(99,102,241,.2); color: var(--primary-h); }
+    .badge-gold { background: rgba(245,158,11,.2); color: var(--gold); }
+    .medal { font-size: 1.4rem; }
+    .empty-state { color: var(--muted); text-align: center; padding: 20px; }
+    .error { color: var(--danger); font-size: .9rem; margin-top: 8px; }
+  </style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════════════
+     ÉCRAN 1 : Configuration du quiz
+══════════════════════════════════════════════════════════ -->
+<div id="s-setup" class="screen active">
+  <div class="page-header">
+    <h1>🎯 Créer un Quiz</h1>
+  </div>
+  <div class="page-body">
+    <p style="color:var(--muted);margin-bottom:24px;">
+      Remplis tes questions ci-dessous. Les champs vides seront ignorés.
+    </p>
+    <div class="q-grid" id="questions-grid">
+      <!-- générées par JS -->
+    </div>
+    <p id="setup-error" class="error"></p>
+  </div>
+  <div class="page-footer">
+    <span style="color:var(--muted);font-size:.9rem;">Les joueurs se connecteront sur la page d'accueil</span>
+    <button class="btn btn-primary btn-lg" onclick="createGame()">
+      Créer la partie →
+    </button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     ÉCRAN 2 : Salon d'attente
+══════════════════════════════════════════════════════════ -->
+<div id="s-lobby" class="screen">
+  <div class="page-header">
+    <h1>🕐 Salle d'attente</h1>
+    <span class="badge badge-primary" id="q-count-badge"></span>
+  </div>
+  <div class="page-body">
+    <div class="url-box">
+      <span class="url-text" id="player-url"></span>
+      <button class="copy-btn" onclick="copyUrl()">📋 Copier</button>
+    </div>
+    <div class="info-box">
+      <div class="section-title">
+        👥 Joueurs connectés — <span id="player-count">0</span>
+      </div>
+      <div class="player-tags" id="lobby-player-tags">
+        <span class="empty-state">En attente de joueurs...</span>
+      </div>
+    </div>
+  </div>
+  <div class="page-footer">
+    <button class="btn btn-outline" onclick="resetGame()">← Recommencer</button>
+    <button class="btn btn-success btn-lg" id="start-btn" onclick="nextQuestion()">
+      🚀 Lancer le quiz !
+    </button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     ÉCRAN 3 : Question en cours
+══════════════════════════════════════════════════════════ -->
+<div id="s-question" class="screen">
+  <div class="page-header">
+    <h1>📝 Question <span id="q-num">1</span>/<span id="q-total">10</span></h1>
+    <span class="badge badge-primary">En cours</span>
+  </div>
+  <div class="page-body">
+    <div class="q-display" id="q-text-live"></div>
+    <div class="counter-bar">
+      <div class="counter-num"><span id="ans-count">0</span>/<span id="ans-total">0</span></div>
+      <div class="counter-label">joueurs ont répondu</div>
+      <div class="answered-list" id="answered-list"></div>
+    </div>
+  </div>
+  <div class="page-footer">
+    <span style="color:var(--muted);font-size:.9rem;">Ferme la question quand tu es prêt à corriger</span>
+    <button class="btn btn-danger btn-lg" onclick="closeQuestion()">
+      🔒 Fermer la question
+    </button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     ÉCRAN 4 : Correction
+══════════════════════════════════════════════════════════ -->
+<div id="s-grading" class="screen">
+  <div class="page-header">
+    <h1>✏️ Correction — Q<span id="grade-q-num"></span></h1>
+  </div>
+  <div class="page-body">
+    <div class="q-display" id="grade-q-text"></div>
+    <div class="section-title">Attribue les points à chaque réponse :</div>
+    <div class="grading-grid" id="grade-container"></div>
+  </div>
+  <div class="page-footer">
+    <span style="color:var(--muted);font-size:.9rem;">Les points 0 sont valides (mauvaise réponse)</span>
+    <button class="btn btn-success btn-lg" onclick="finishGrading()">
+      ✅ Terminer la correction
+    </button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     ÉCRAN 5 : Scores intermédiaires
+══════════════════════════════════════════════════════════ -->
+<div id="s-between" class="screen">
+  <div class="page-header">
+    <h1>📊 Scores intermédiaires</h1>
+  </div>
+  <div class="page-body">
+    <div class="info-box">
+      <table class="lb" id="between-lb"></table>
+    </div>
+  </div>
+  <div class="page-footer">
+    <span style="color:var(--muted);font-size:.9rem;">Quand tout le monde est prêt</span>
+    <button class="btn btn-primary btn-lg" onclick="nextQuestion()">
+      ➡️ Question suivante
+    </button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     ÉCRAN 6 : Classement final
+══════════════════════════════════════════════════════════ -->
+<div id="s-leaderboard" class="screen">
+  <div class="page-header">
+    <h1>🏆 Classement final</h1>
+  </div>
+  <div class="page-body">
+    <div class="info-box">
+      <table class="lb" id="final-lb"></table>
+    </div>
+  </div>
+  <div class="page-footer">
+    <button class="btn btn-primary btn-lg" onclick="resetGame()">
+      🔄 Nouvelle partie
+    </button>
+  </div>
+</div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+  const socket = io();
+
+  // ── Utilitaires ─────────────────────────────────────────────────
+  const $ = (id) => document.getElementById(id);
+  const esc = (s) =>
+    String(s).replace(/&/g,'&amp;').replace(/</g,'<').replace(/>/g,'>').replace(/"/g,'"');
+
+  function showScreen(id) {
+    document.querySelectorAll('.screen').forEach((s) => s.classList.remove('active'));
+    $(id).classList.add('active');
+  }
+
+  function renderLeaderboard(tableId, scores) {
+    const medals = ['🥇', '🥈', '🥉'];
+    const rowClass = ['gold', 'silver', 'bronze'];
+    const t = $(tableId);
+    t.innerHTML = `
+      <thead>
+        <tr>
+          <th style="width:50px;text-align:center">#</th>
+          <th>Joueur</th>
+          <th style="text-align:right">Score</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${scores.map((p, i) => `
+          <tr class="${rowClass[i] || ''}">
+            <td class="rank">${medals[i] || p.rank}</td>
+            <td>${esc(p.pseudo)}</td>
+            <td class="score">${p.score} pt${p.score > 1 ? 's' : ''}</td>
+          </tr>
+        `).join('')}
+      </tbody>`;
+  }
+
+  // ── Setup — Génération des champs de questions ───────────────────
+  const Q_COUNT = 10;
+  (function buildForm() {
+    const grid = $('questions-grid');
+    for (let i = 1; i <= Q_COUNT; i++) {
+      grid.innerHTML += `
+        <div class="form-group">
+          <label>Question ${i}</label>
+          <textarea class="q-input" id="q${i}" placeholder="Écris ta question ici…" rows="2"></textarea>
+        </div>`;
+    }
+  })();
+
+  function createGame() {
+    const questions = [];
+    for (let i = 1; i <= Q_COUNT; i++) {
+      questions.push($(`q${i}`).value);
+    }
+    socket.emit('host:create', { questions }, (res) => {
+      if (res.error) {
+        $('setup-error').textContent = res.error;
+        return;
+      }
+      $('q-count-badge').textContent = `${res.count} question${res.count > 1 ? 's' : ''}`;
+      $('player-url').textContent = window.location.origin;
+      showScreen('s-lobby');
+    });
+  }
+
+  function copyUrl() {
+    navigator.clipboard.writeText(window.location.origin);
+    const btn = document.querySelector('.copy-btn');
+    btn.textContent = '✅ Copié !';
+    setTimeout(() => (btn.textContent = '📋 Copier'), 2000);
+  }
+
+  // ── Lobby ────────────────────────────────────────────────────────
+  socket.on('host:player_update', ({ list, count }) => {
+    $('player-count').textContent = count;
+    const tags = $('lobby-player-tags');
+    if (list.length === 0) {
+      tags.innerHTML = '<span class="empty-state">En attente de joueurs...</span>';
+    } else {
+      tags.innerHTML = list.map((p) => `<span class="player-tag">🎮 ${esc(p)}</span>`).join('');
+    }
+  });
+
+  function nextQuestion() {
+    socket.emit('host:next_question');
+  }
+
+  // ── Question active ──────────────────────────────────────────────
+  socket.on('host:question_active', ({ index, total, text, playerCount }) => {
+    $('q-num').textContent = index + 1;
+    $('q-total').textContent = total;
+    $('q-text-live').textContent = text;
+    $('ans-count').textContent = 0;
+    $('ans-total').textContent = playerCount;
+    $('answered-list').innerHTML = '';
+    showScreen('s-question');
+  });
+
+  socket.on('host:answer_in', ({ pseudo, count, total }) => {
+    $('ans-count').textContent = count;
+    $('ans-total').textContent = total;
+    const tag = document.createElement('span');
+    tag.className = 'answered-tag';
+    tag.textContent = `✓ ${pseudo}`;
+    $('answered-list').appendChild(tag);
+  });
+
+  function closeQuestion() {
+    socket.emit('host:close_question');
+  }
+
+  // ── Correction ──────────────────────────────────────────────────
+  socket.on('host:start_grading', ({ index, total, question, answers }) => {
+    $('grade-q-num').textContent = `${index + 1}/${total}`;
+    $('grade-q-text').textContent = question;
+
+    const container = $('grade-container');
+    container.innerHTML = '';
+
+    answers.forEach(({ socketId, pseudo, answer }) => {
+      const card = document.createElement('div');
+      card.className = 'acard';
+      card.id = `acard-${socketId}`;
+      card.innerHTML = `
+        <div class="acard-header">
+          <span class="acard-pseudo">👤 ${esc(pseudo)}</span>
+          <span class="pts-badge" id="pbadge-${socketId}">0 pt</span>
+        </div>
+        <div class="acard-answer ${answer ? '' : 'no-ans'}">
+          ${answer ? `"${esc(answer)}"` : '— Pas de réponse —'}
+        </div>
+        <div class="pt-controls">
+          ${[0, 1, 2, 3].map((p) => `
+            <button class="pt-btn ${p === 0 ? 'sel' : ''}"
+                    data-sid="${socketId}" data-pts="${p}">${p}</button>
+          `).join('')}
+          <input class="pt-custom" type="number" min="0" max="999"
+                 placeholder="…" data-sid="${socketId}" title="Points personnalisés">
+        </div>
+        <div class="total-score-hint" id="hint-${socketId}">Total : calcul en cours…</div>
+      `;
+      container.appendChild(card);
+    });
+
+    showScreen('s-grading');
+  });
+
+  // Délégation d'événements pour les boutons de points
+  $('grade-container').addEventListener('click', (e) => {
+    const btn = e.target.closest('.pt-btn');
+    if (!btn) return;
+    const sid = btn.dataset.sid;
+    const pts = parseInt(btn.dataset.pts);
+    applyPoints(sid, pts);
+    // Sync input custom
+    const card = document.getElementById(`acard-${sid}`);
+    if (card) card.querySelector('.pt-custom').value = '';
+  });
+
+  $('grade-container').addEventListener('change', (e) => {
+    const inp = e.target.closest('.pt-custom');
+    if (!inp) return;
+    const sid = inp.dataset.sid;
+    const pts = Math.max(0, parseInt(inp.value) || 0);
+    inp.value = pts;
+    applyPoints(sid, pts);
+    // Désélectionner les boutons rapides
+    const card = document.getElementById(`acard-${sid}`);
+    if (card) card.querySelectorAll('.pt-btn').forEach((b) => b.classList.remove('sel'));
+  });
+
+  function applyPoints(sid, pts) {
+    socket.emit('host:set_points', { socketId: sid, points: pts });
+    const card = document.getElementById(`acard-${sid}`);
+    if (!card) return;
+    // Boutons
+    card.querySelectorAll('.pt-btn').forEach((b) => {
+      b.classList.toggle('sel', parseInt(b.dataset.pts) === pts);
+    });
+    // Badge
+    const badge = document.getElementById(`pbadge-${sid}`);
+    if (badge) {
+      badge.textContent = `${pts} pt${pts > 1 ? 's' : ''}`;
+      badge.className = 'pts-badge' + (pts > 0 ? ' active' : '');
+    }
+    // Marquer comme corrigé
+    card.classList.add('reviewed');
+  }
+
+  socket.on('host:points_ack', ({ socketId, totalScore }) => {
+    const hint = document.getElementById(`hint-${socketId}`);
+    if (hint) hint.textContent = `Total joueur : ${totalScore} pt${totalScore > 1 ? 's' : ''}`;
+  });
+
+  function finishGrading() {
+    socket.emit('host:finish_grading');
+  }
+
+  // ── Scores intermédiaires ────────────────────────────────────────
+  socket.on('host:scores', ({ scores }) => {
+    renderLeaderboard('between-lb', scores);
+    showScreen('s-between');
+  });
+
+  // ── Classement final ─────────────────────────────────────────────
+  socket.on('quiz:leaderboard', (scores) => {
+    renderLeaderboard('final-lb', scores);
+    showScreen('s-leaderboard');
+  });
+
+  // ── Reset ────────────────────────────────────────────────────────
+  function resetGame() {
+    socket.emit('host:new_game');
+    showScreen('s-setup');
+    // Vider les champs
+    for (let i = 1; i <= Q_COUNT; i++) {
+      const el = $(`q${i}`);
+      if (el) el.value = '';
+    }
+    $('setup-error').textContent = '';
+  }
+
+  socket.on('quiz:reset', () => showScreen('s-setup'));
+</script>
+</body>
+</html>

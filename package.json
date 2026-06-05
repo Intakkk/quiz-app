@@ -1,0 +1,16 @@
+{
+  "name": "quiz-entre-amis",
+  "version": "1.0.0",
+  "description": "Quiz en temps réel entre amis",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.22.2",
+    "socket.io": "^4.8.3"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

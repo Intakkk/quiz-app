@@ -491,14 +491,32 @@
   }
 
   // ── Setup — Génération des champs de questions ───────────────────
-  const Q_COUNT = 10;
+  const Q_COUNT = 15;
+  const QUESTIONS = [
+    "Ta question 1 ici ?",
+    "Ta question 2 ici ?",
+    "Ta question 3 ici ?",
+    "Ta question 4 ici ?",
+    "Ta question 5 ici ?",
+    "Ta question 6 ici ?",
+    "Ta question 7 ici ?",
+    "Ta question 8 ici ?",
+    "Ta question 9 ici ?",
+    "Ta question 10 ici ?",
+    "Ta question 11 ici ?",
+    "Ta question 12 ici ?",
+    "Ta question 13 ici ?",
+    "Ta question 14 ici ?",
+    "Ta question 15 ici ?",
+  ];
+
   (function buildForm() {
     const grid = $('questions-grid');
     for (let i = 1; i <= Q_COUNT; i++) {
       grid.innerHTML += `
         <div class="form-group">
           <label>Question ${i}</label>
-          <textarea class="q-input" id="q${i}" placeholder="Écris ta question ici…" rows="2"></textarea>
+          <textarea class="q-input" id="q${i}" rows="2">${QUESTIONS[i-1] || ''}</textarea>
         </div>`;
     }
   })();
